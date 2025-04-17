@@ -77,7 +77,7 @@ jobs:
 
       - name: Get current version
         if: steps.versionize.outcome == 'success'
-        run: echo "VERSION=v$(versionize inspect)" >> $GITHUB_ENV
+        run: echo "VERSION=$(versionize inspect)" >> $GITHUB_ENV
 
       - name: Get current changelog
         if: steps.versionize.outcome == 'success'
@@ -97,7 +97,7 @@ jobs:
       - name: Publish new release
         if: steps.versionize.outcome == 'success'
         run: |
-          gh release create ${{env.VERSION}} -t "Release ${{env.VERSION}}" -F latest_changelog.md
-          gh release upload ${{env.VERSION}} "src/dsian.TcPnScanner.CLI/bin/release/*.nupkg"
+          gh release create v${{env.VERSION}} -t "Release v${{env.VERSION}}" -F latest_changelog.md
+          gh release upload v${{env.VERSION}} "src/dsian.TcPnScanner.CLI/bin/release/*.nupkg"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
