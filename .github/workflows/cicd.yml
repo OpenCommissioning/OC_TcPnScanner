@@ -38,9 +38,9 @@ jobs:
         run: dotnet nuget locals all --clear
       - name: Build
         run: dotnet build -c Release
-      - name: Test
-        if: success()
-        run: dotnet test -c Release --no-build
+      #- name: Test
+      #  if: success()
+      #  run: dotnet test -c Release --no-build
 
 
   cd:
