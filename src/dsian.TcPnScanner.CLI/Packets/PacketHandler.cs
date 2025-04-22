@@ -2,6 +2,7 @@ using dsian.TcPnScanner.CLI.PnDevice;
 using Microsoft.Extensions.Logging;
 using PacketDotNet;
 using System.Text;
+using System.Text.Json;
 
 namespace dsian.TcPnScanner.CLI.Packets;
 
@@ -10,8 +11,9 @@ internal class PacketHandler : IPacketHandler
     private readonly ICaptureDeviceProxy _captureDevice;
     private readonly IDeviceStore _deviceStore;
     private readonly ILogger? _logger;
+    private readonly Dictionary<string, string> _deviceIds;
 
-    public PacketHandler(ICaptureDeviceProxy captureDevice, IDeviceStore deviceStore, ILogger? logger = default)
+    public PacketHandler(ICaptureDeviceProxy captureDevice, IDeviceStore deviceStore, ILogger? logger = null, CliOptions? cliOptions = null)
     {
         Guard.ThrowIfNull(captureDevice);
         _captureDevice = captureDevice;
@@ -20,6 +22,32 @@ internal class PacketHandler : IPacketHandler
         _deviceStore.OnAllDevicesScanned += DeviceStore_OnAllDevicesScanned;
         _logger = logger;
         _logger?.BeginScope(this);
+        _deviceIds = DeserializeDeviceIds(cliOptions?.DeviceFile);
+    }
+
+    private Dictionary<string, string> DeserializeDeviceIds(string? jsonFile)
+    {
+        if (string.IsNullOrWhiteSpace(jsonFile))
+        {
+            return [];
+        }
+
+        if (!File.Exists(jsonFile))
+        {
+            _logger?.LogError("File '{jsonFile}' doesn't exist", jsonFile);
+            return [];
+        }
+
+        try
+        {
+            var json = File.ReadAllText(jsonFile);
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? [];
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to deserialize '{jsonFile}'", jsonFile);
+            return [];
+        }
     }
 
     public void HandleEthernetPacket(EthernetPacket ethPacket)
@@ -76,6 +104,7 @@ internal class PacketHandler : IPacketHandler
         var ethPacket = (EthernetPacket)pnPacket.SourcePacket!;
         var responsePacket = new EthernetPacket(pnPacket.FakePhysicalAddress, ethPacket.SourceHardwareAddress, EthernetType.Profinet);
         var data = new List<byte>();
+
         data.AddRange(BitConverter.GetBytes(ProfinetDcpIdentRequestPacket.FRAME_ID_RES).Reverse());
         data.Add((byte)PnDcpServiceId.Identify);
         data.Add((byte)PnDcpServiceType.ResponseSuccess);
@@ -83,15 +112,48 @@ internal class PacketHandler : IPacketHandler
         data.Add(0x0);
         data.Add(0x0);
 
-        var blockDevName = BlockDeviceNameOfStation(pnPacket).Reverse().ToArray();
-        var blockIpIp = BlockIpIp().Reverse().ToArray();
-        
-        data.AddRange(BitConverter.GetBytes((ushort)(blockDevName.Length + blockIpIp.Length)).Reverse());
+        var blockDevName = BlockDeviceNameOfStation(pnPacket);
+        var blockIpIp = BlockIpIp();
+        var devId = VendorAndDeviceId(pnPacket);
+        var blocksLength = (ushort) (blockDevName.Length + blockIpIp.Length + devId.Length);
+
+        data.AddRange(BitConverter.GetBytes(blocksLength).Reverse());
         data.AddRange(blockDevName);
+        data.AddRange(devId);
         data.AddRange(blockIpIp);
 
         responsePacket.PayloadData = data.ToArray();
         _captureDevice.SendPacketHandler(responsePacket);
+    }
+
+    private byte[] VendorAndDeviceId(ProfinetDcpIdentRequestPacket pnPacket)
+    {
+        if (!_deviceIds.TryGetValue(pnPacket.NameOfStation, out var id)) return [];
+
+        try
+        {
+            var value = Convert.ToUInt32(id.Replace("0x", ""), 16);
+            var vendorId = (ushort)(value >> 16);
+            var deviceId = (ushort)value;
+
+            var data = new List<byte>
+            {
+                0x02, // Option: DeviceProperties
+                0x03, // Suboption: Device ID
+                0x00, // DcpBlockLength
+                0x06,
+                0x00, // Reserved
+                0x00
+            };
+
+            data.AddRange(BitConverter.GetBytes(vendorId).Reverse());
+            data.AddRange(BitConverter.GetBytes(deviceId).Reverse());
+            return [.. data];
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     private byte[] BlockDeviceNameOfStation(ProfinetDcpIdentRequestPacket pnPacket)
@@ -108,8 +170,7 @@ internal class PacketHandler : IPacketHandler
         {
             data.Add(0x0); //Padding byte
         }
-        
-        data.Reverse();
+
         return data.ToArray();
     }
 
@@ -123,7 +184,6 @@ internal class PacketHandler : IPacketHandler
         data.AddRange(BitConverter.GetBytes((uint)0x00000000).Reverse()); // IP Address
         data.AddRange(BitConverter.GetBytes((uint)0x00000000).Reverse()); // Subnet Mask
         data.AddRange(BitConverter.GetBytes((uint)0x00000000).Reverse()); // Gateway
-        data.Reverse();
         return data.ToArray();
     }
 

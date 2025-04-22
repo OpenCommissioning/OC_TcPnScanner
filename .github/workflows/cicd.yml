@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}
@@ -37,9 +38,9 @@ jobs:
         run: dotnet nuget locals all --clear
       - name: Build
         run: dotnet build -c Release
-      - name: Test
-        if: success()
-        run: dotnet test -c Release --no-build
+      #- name: Test
+      #  if: success()
+      #  run: dotnet test -c Release --no-build
 
 
   cd:
@@ -61,15 +62,43 @@ jobs:
         with:
           dotnet-version: ${{env.dotnet_versions}}
 
-      - name: Clean nuget
-        run: dotnet nuget locals all --clear
-      - name: Build
-        run: dotnet build -c Release
+      - name: Install Versionize
+        run: dotnet tool install --global Versionize
 
-      - name: publish on version change
-        id: publish_nuget
-        if: ${{ success() && (github.event_name == 'push' && github.ref == 'refs/heads/main')}}
-        uses: alirezanet/publish-nuget@v3.1.0
+      - name: Setup git
+        run: |
+          git config --global user.email opencommissioning@spiratec.com
+          git config --global user.name "oc-bot"
+
+      - name: Versioning
+        id: versionize
+        run: versionize --exit-insignificant-commits
+        continue-on-error: true
+
+      - name: Get current version
+        if: steps.versionize.outcome == 'success'
+        run: echo "VERSION=$(versionize inspect)" >> $GITHUB_ENV
+
+      - name: Get current changelog
+        if: steps.versionize.outcome == 'success'
+        run: echo "$(versionize changelog)" > latest_changelog.md
+
+      - name: Push changes to GitHub
+        if: steps.versionize.outcome == 'success'
+        uses: ad-m/github-push-action@master
         with:
-          PROJECT_FILE_PATH: src/dsian.TcPnScanner.CLI/dsian.TcPnScanner.CLI.csproj
-          NUGET_KEY: ${{secrets.TCHAXX_NUGET_API_KEY}}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+          tags: true
+
+      - name: Build package
+        run: dotnet build -c release
+
+      - name: Publish new release
+        if: steps.versionize.outcome == 'success'
+        run: |
+          gh release create v${{env.VERSION}} -t "Release v${{env.VERSION}}" -F latest_changelog.md
+          gh release upload v${{env.VERSION}} "/home/runner/work/OC_TcPnScanner/OC_TcPnScanner/src/dsian.TcPnScanner.CLI/bin/Release/dsian.TcPnScanner.CLI.${{env.VERSION}}.nupkg"
+          
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

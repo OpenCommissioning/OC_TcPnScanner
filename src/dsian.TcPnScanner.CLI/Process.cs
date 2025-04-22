@@ -30,7 +30,7 @@ internal sealed class Process
         var deviceStore = new DeviceStore();
         using var cap = Capture.Create()
             .WithCapturingDevice(capDevice)
-            .WithEthernetPacketHandler(new PacketHandler(capDevice, deviceStore, _logger))
+            .WithEthernetPacketHandler(new PacketHandler(capDevice, deviceStore, _logger, _cliOptions))
             .WithCaptureFileWriterDevice(GetCaptureFileWriter(_cliOptions))
             .WithLogger(_logger);
 

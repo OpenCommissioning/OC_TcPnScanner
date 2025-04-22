@@ -31,5 +31,18 @@ public sealed record CliOptions
 
     [Option("dump-file", Default = Constants.PCAP_DUMPFILE_DEFAULT, HelpText = "Pcap dump file.")]
     public string DumpPcapFile { get; init; } = Constants.PCAP_DUMPFILE_DEFAULT;
-}
 
+    [Option("device-file", Default = "", HelpText = """
+                                                    Path to a json dictionary file with Vendor- and Device IDs,
+                                                    where the keys represent the expected profinet names and the values
+                                                    represent the Vendor- and Device IDs as hexadecimal string.
+
+                                                    File content example:
+
+                                                    {
+                                                        "pn-device-1": "0x002a0313",
+                                                        "pn-device-2": "0x002a0314"
+                                                    }
+                                                    """)]
+    public string DeviceFile { get; init; } = string.Empty;
+}
