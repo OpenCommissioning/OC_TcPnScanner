@@ -7,31 +7,14 @@ namespace dsian.TcPnScanner.CLI.PnDevice;
 
 internal class DeviceStore : IDeviceStore
 {
-    public const int MAX_DEVICES_CAPACITY = 256;
-    private readonly Dictionary<PhysicalAddress, Device> _devices = new Dictionary<PhysicalAddress, Device>(MAX_DEVICES_CAPACITY);
-
-    public event EventHandler? OnAllDevicesScanned;
+    private readonly Dictionary<PhysicalAddress, Device> _devices = [];
 
     public int Count => _devices.Count;
 
-    public DeviceStore()
-    {
-    }
-
-    public bool TryGetValue(PhysicalAddress key, [MaybeNullWhen(false)] out Device value)
-    {
-        return TryGetValue(key, out value);
-    }
-
     public bool TryAddDevice(Device device)
     {
-        var (phyAddr, foundDevice) = _devices.FirstOrDefault(x => x.Value.NameOfStation == device.NameOfStation);
-        if (phyAddr is not null && _devices.ContainsKey(phyAddr))
-        {
-            _devices.Remove(phyAddr);
-        }
-
-        return _devices.TryAdd(device.PhysicalAddress, device);
+        var foundDevice = _devices.FirstOrDefault(x => x.Value.NameOfStation == device.NameOfStation).Value;
+        return foundDevice is null && _devices.TryAdd(device.PhysicalAddress, device);
     }
 
     public bool TryUpdateIpAddress(ProfinetDcpSetIPRequestPacket dcpSetIpReqPacket)
@@ -40,6 +23,7 @@ internal class DeviceStore : IDeviceStore
         {
             return false;
         }
+
         if (!_devices.TryGetValue(ethernetPacket.DestinationHardwareAddress, out var device))
         {
             return false;
@@ -66,7 +50,6 @@ internal class DeviceStore : IDeviceStore
         }
 
         _devices[devicePhysicalAddress].PnIoConnectRequestPacket = profinetIoConnectRequestPacket;
-        CheckIfAllDevicesHaveReceivedConReqPacket();
         return true;
     }
 
@@ -77,34 +60,13 @@ internal class DeviceStore : IDeviceStore
 
     public string GetProfinetDeviceName()
     {
-        var defaultName = "dsian.TcPnScanner (Profinet Device)";
-        if (!_devices.Any())
+        const string defaultName = "dsian.TcPnScanner (Profinet Device)";
+        if (_devices.Count == 0)
         {
             return defaultName;
         }
 
         var pnIoConReqPacket = _devices.First().Value.PnIoConnectRequestPacket;
-        if (pnIoConReqPacket is null)
-        {
-            return defaultName;
-        }
-
-        return $"{pnIoConReqPacket.ARBlockReqHeader.CMInitiatorStationName} (Profinet Device)";
-    }
-
-    private void CheckIfAllDevicesHaveReceivedConReqPacket()
-    {
-        if (!_devices.Any())
-        {
-            return;
-        }
-
-        var devicesWithConReqPacket = _devices.Values.Where(x => x.PnIoConnectRequestPacket is not null);
-        if (devicesWithConReqPacket.Count() != _devices.Count)
-        {
-            return;
-        }
-
-        OnAllDevicesScanned?.Invoke(this, EventArgs.Empty);
+        return pnIoConReqPacket is null ? defaultName : $"{pnIoConReqPacket.ARBlockReqHeader.CMInitiatorStationName} (Profinet Device)";
     }
 }

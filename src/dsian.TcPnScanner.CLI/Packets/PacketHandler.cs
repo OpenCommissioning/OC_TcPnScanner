@@ -19,7 +19,6 @@ internal class PacketHandler : IPacketHandler
         _captureDevice = captureDevice;
         Guard.ThrowIfNull(deviceStore);
         _deviceStore = deviceStore;
-        _deviceStore.OnAllDevicesScanned += DeviceStore_OnAllDevicesScanned;
         _logger = logger;
         _logger?.BeginScope(this);
         _deviceIds = DeserializeDeviceIds(cliOptions?.DeviceFile);
@@ -56,14 +55,14 @@ internal class PacketHandler : IPacketHandler
         {
             if (ProfinetDcpIdentRequestPacket.TryParse(ethPacket, out var pnIdentPacket, _logger))
             {
-                _deviceStore.TryAddDevice(DeviceFactory.CreateFromPacket(pnIdentPacket));
-
-                SendProfinetDcpIdentResponsePacket(pnIdentPacket);
+                if (_deviceStore.TryAddDevice(DeviceFactory.CreateFromPacket(pnIdentPacket)))
+                {
+                    SendProfinetDcpIdentResponsePacket(pnIdentPacket);
+                }
             }
             else if (ProfinetDcpSetIPRequestPacket.TryParse(ethPacket, out var pnSetIpPacket))
             {
                 _deviceStore.TryUpdateIpAddress(pnSetIpPacket);
-
                 SendProfinetDcpSetIpResponsePacket(pnSetIpPacket);
             }
             else if (ethPacket.Type == EthernetType.Arp)
@@ -80,7 +79,6 @@ internal class PacketHandler : IPacketHandler
             else
             {
                 _logger?.LogWarning("Ignoring packet: {EthernetPacket}", ethPacket);
-                return;
             }
         }
         catch (Exception ex)
@@ -94,7 +92,6 @@ internal class PacketHandler : IPacketHandler
         if (!_deviceStore.UpdatePnIoConnectRequestPacket(pnIoConReqPacket))
         {
             _logger?.LogWarning("Couldn't find matching device for {PnIoConReqPacket}", pnIoConReqPacket);
-            return;
         }
     }
 
@@ -156,11 +153,13 @@ internal class PacketHandler : IPacketHandler
         }
     }
 
-    private byte[] BlockDeviceNameOfStation(ProfinetDcpIdentRequestPacket pnPacket)
+    private static byte[] BlockDeviceNameOfStation(ProfinetDcpIdentRequestPacket pnPacket)
     {
-        var data = new List<byte>();
-        data.Add(0x2);  // Option: DeviceProperties
-        data.Add(0x2);  // Suboption: Name of Station
+        var data = new List<byte>
+        {
+            0x2, // Option: DeviceProperties
+            0x2 // Suboption: Name of Station
+        };
         var lenName = pnPacket.NameOfStation.Length;
         data.AddRange(BitConverter.GetBytes((ushort)(lenName + 2)).Reverse()); // DcpBlockLength
         data.AddRange(BitConverter.GetBytes((ushort)0x0)); //reserved
@@ -171,20 +170,22 @@ internal class PacketHandler : IPacketHandler
             data.Add(0x0); //Padding byte
         }
 
-        return data.ToArray();
+        return [.. data];
     }
 
-    private byte[] BlockIpIp()
+    private static byte[] BlockIpIp()
     {
-        var data = new List<byte>();
-        data.Add(0x1);  // Option: IP
-        data.Add(0x2);  // Suboption: IP Parameter
+        var data = new List<byte>
+        {
+            0x1, // Option: IP
+            0x2 // Suboption: IP Parameter
+        };
         data.AddRange(BitConverter.GetBytes((ushort)14).Reverse()); // DcpBlockLength
         data.AddRange(BitConverter.GetBytes((ushort)0x0000).Reverse()); // IP not set
         data.AddRange(BitConverter.GetBytes((uint)0x00000000).Reverse()); // IP Address
         data.AddRange(BitConverter.GetBytes((uint)0x00000000).Reverse()); // Subnet Mask
         data.AddRange(BitConverter.GetBytes((uint)0x00000000).Reverse()); // Gateway
-        return data.ToArray();
+        return [.. data];
     }
 
     private void SendProfinetDcpSetIpResponsePacket(ProfinetDcpSetIPRequestPacket pnPacket)
@@ -212,7 +213,7 @@ internal class PacketHandler : IPacketHandler
 
         data.Add(0x0);  // Padding 1 Byte
 
-        responsePacket.PayloadData = data.ToArray();
+        responsePacket.PayloadData = [.. data];
         _captureDevice.SendPacketHandler(responsePacket);
     }
 
@@ -239,12 +240,7 @@ internal class PacketHandler : IPacketHandler
         data.AddRange(arpPacket.SenderHardwareAddress.GetAddressBytes());
         data.AddRange(arpPacket.SenderProtocolAddress.GetAddressBytes());
 
-        responsePacket.PayloadData = data.ToArray();
+        responsePacket.PayloadData = [.. data];
         _captureDevice.SendPacketHandler(responsePacket);
-    }
-    private void DeviceStore_OnAllDevicesScanned(object? sender, EventArgs e)
-    {
-        _captureDevice.PcapDevice.StopCapture();
-        _logger?.LogInformation("✨ Successfully scanned {NumberOfScannedDevices} device(s)!", _deviceStore.Count);
     }
 }
