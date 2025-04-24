@@ -11,6 +11,5 @@ internal interface IDeviceStore
     bool UpdatePnIoConnectRequestPacket(ProfinetIoConnectRequestPacket profinetIoConnectRequestPacket);
     int Count { get; }
     IEnumerable<Device> GetDevices();
-    event EventHandler? OnAllDevicesScanned;
     string GetProfinetDeviceName();
 }
