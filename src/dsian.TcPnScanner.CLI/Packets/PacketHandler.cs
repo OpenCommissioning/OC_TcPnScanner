@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using dsian.TcPnScanner.CLI.PnDevice;
 using Microsoft.Extensions.Logging;
 using PacketDotNet;
 using System.Text;
 using System.Text.Json;
+using SharpPcap;
 
 namespace dsian.TcPnScanner.CLI.Packets;
 
@@ -12,6 +14,7 @@ internal class PacketHandler : IPacketHandler
     private readonly IDeviceStore _deviceStore;
     private readonly ILogger? _logger;
     private readonly Dictionary<string, string> _deviceIds;
+    private readonly Stopwatch _stopwatch = new();
 
     public PacketHandler(ICaptureDeviceProxy captureDevice, IDeviceStore deviceStore, ILogger? logger = null, CliOptions? cliOptions = null)
     {
@@ -22,6 +25,33 @@ internal class PacketHandler : IPacketHandler
         _logger = logger;
         _logger?.BeginScope(this);
         _deviceIds = DeserializeDeviceIds(cliOptions?.DeviceFile);
+        TrackActivity();
+    }
+
+    private void TrackActivity()
+    {
+        Task.Run(async () =>
+        {
+            var captureHasStopped = false;
+            _captureDevice.PcapDevice.OnCaptureStopped += PcapDeviceOnOnCaptureStopped;
+
+            while (_stopwatch.ElapsedMilliseconds < 10000 && !captureHasStopped)
+            {
+                await Task.Delay(100);
+            }
+
+            if (!captureHasStopped)
+            {
+                _captureDevice.PcapDevice.StopCapture();
+            }
+
+            return;
+
+            void PcapDeviceOnOnCaptureStopped(object sender, CaptureStoppedEventStatus status)
+            {
+                captureHasStopped = true;
+            }
+        });
     }
 
     private Dictionary<string, string> DeserializeDeviceIds(string? jsonFile)
@@ -58,23 +88,24 @@ internal class PacketHandler : IPacketHandler
                 if (_deviceStore.TryAddDevice(DeviceFactory.CreateFromPacket(pnIdentPacket)))
                 {
                     SendProfinetDcpIdentResponsePacket(pnIdentPacket);
+                    _stopwatch.Restart();
                 }
             }
             else if (ProfinetDcpSetIPRequestPacket.TryParse(ethPacket, out var pnSetIpPacket))
             {
                 _deviceStore.TryUpdateIpAddress(pnSetIpPacket);
                 SendProfinetDcpSetIpResponsePacket(pnSetIpPacket);
+                _stopwatch.Restart();
             }
             else if (ethPacket.Type == EthernetType.Arp)
             {
                 SendArpResponsePacket(ethPacket);
-            }
-            else if (ethPacket.Type == EthernetType.Lldp)
-            {
+                _stopwatch.Restart();
             }
             else if (ProfinetIoConnectRequestPacket.TryParse(ethPacket, out var pnIoConReqPacket, _logger))
             {
                 UpdateDevicePnIoConReqPacket(pnIoConReqPacket);
+                _stopwatch.Restart();
             }
             else
             {
