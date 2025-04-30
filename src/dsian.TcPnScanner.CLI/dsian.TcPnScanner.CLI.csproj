@@ -5,19 +5,20 @@
         <ErrorReport>none</ErrorReport>
         <PackAsTool>True</PackAsTool>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <RepositoryUrl>https://github.com/TcHaxx/TcPnScanner</RepositoryUrl>
+        <RepositoryUrl>https://github.com/OpenCommissioning/OC_TcPnScanner</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>profinetdcp; pnio-cm; twincat; tf6270; sharppcap</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageProjectUrl>https://github.com/TcHaxx/TcPnScanner</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/OpenCommissioning/OC_TcPnScanner</PackageProjectUrl>
         <Description>Scans a PROFINET and adds all Stations to a PROFINET IO Device (TF6270)</Description>
         <Copyright>Copyright (c) 2023 densogiaichned</Copyright>
         <Title>TwinCAT Profinet Device Scanner</Title>
-        <Version>0.6.2</Version>
+        <Version>1.0.0</Version>
         <AssemblyVersion>$(Version)</AssemblyVersion>
         <FileVersion>$(Version)</FileVersion>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <AssemblyName>OC.TcPnScanner.CLI</AssemblyName>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
