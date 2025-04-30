@@ -2,12 +2,12 @@ name: CD
 on:
   push:
     branches: [ "main" ]
-    
+
 env:
   dotnet_versions: |
                    8.0.x
                    9.0.x
-                   
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-          
+
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
@@ -51,14 +51,17 @@ jobs:
           branch: ${{ github.ref }}
           tags: true
 
-      - name: Build package
-        run: dotnet build -c release
+      - name: Dotnet build
+        if: steps.versionize.outcome == 'success'
+        run: dotnet build --configuration release
+
+      - name: Push to NuGet
+        if: steps.versionize.outcome == 'success'
+        run: dotnet nuget push "/home/runner/work/OC_TcPnScanner/OC_TcPnScanner/src/dsian.TcPnScanner.CLI/bin/release/*.nupkg" --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
 
       - name: Publish new release
         if: steps.versionize.outcome == 'success'
         run: |
           gh release create v${{env.VERSION}} -t "Release v${{env.VERSION}}" -F latest_changelog.md
-          gh release upload v${{env.VERSION}} "/home/runner/work/OC_TcPnScanner/OC_TcPnScanner/src/dsian.TcPnScanner.CLI/bin/Release/dsian.TcPnScanner.CLI.${{env.VERSION}}.nupkg"
-          
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
