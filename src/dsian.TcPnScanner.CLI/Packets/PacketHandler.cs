@@ -16,7 +16,7 @@ internal class PacketHandler : IPacketHandler
     private readonly Dictionary<string, string> _deviceIds;
     private readonly Stopwatch _stopwatch = new();
 
-    public PacketHandler(ICaptureDeviceProxy captureDevice, IDeviceStore deviceStore, ILogger? logger = null, CliOptions? cliOptions = null)
+    public PacketHandler(ICaptureDeviceProxy captureDevice, IDeviceStore deviceStore, Aml.AmlFile amlFile, ILogger? logger = null)
     {
         Guard.ThrowIfNull(captureDevice);
         _captureDevice = captureDevice;
@@ -24,7 +24,7 @@ internal class PacketHandler : IPacketHandler
         _deviceStore = deviceStore;
         _logger = logger;
         _logger?.BeginScope(this);
-        _deviceIds = DeserializeDeviceIds(cliOptions?.DeviceFile);
+        _deviceIds = amlFile.DeviceIdsByName;
         TrackActivity();
     }
 

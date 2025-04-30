@@ -32,17 +32,9 @@ public sealed record CliOptions
     [Option("dump-file", Default = Constants.PCAP_DUMPFILE_DEFAULT, HelpText = "Pcap dump file.")]
     public string DumpPcapFile { get; init; } = Constants.PCAP_DUMPFILE_DEFAULT;
 
-    [Option("device-file", Default = "", HelpText = """
-                                                    Path to a json dictionary file with Vendor- and Device IDs,
-                                                    where the keys represent the expected profinet names and the values
-                                                    represent the Vendor- and Device IDs as hexadecimal string.
+    [Option("aml-file", Required = false, HelpText = "Aml export file from TIA.")]
+    public string? AmlFile { get; init; }
 
-                                                    File content example:
-
-                                                    {
-                                                        "pn-device-1": "0x002a0313",
-                                                        "pn-device-2": "0x002a0314"
-                                                    }
-                                                    """)]
-    public string DeviceFile { get; init; } = string.Empty;
+    [Option("gsd-path", Required = false, HelpText = "Path to a folder containing GSDML files.")]
+    public string? GsdFile { get; init; }
 }

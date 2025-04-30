@@ -13,12 +13,14 @@ internal sealed class Process
     private LibPcapLiveDevice? _libPcapLiveDevice;
     private readonly CliOptions _cliOptions;
     private readonly ILogger? _logger;
+    private readonly Aml.AmlFile _amlFile;
 
     internal Process(CliOptions cliOptions, ILogger? logger)
     {
         Guard.ThrowIfNull(cliOptions);
         _cliOptions = cliOptions;
         _logger = logger;
+        _amlFile = new Aml.AmlFile(_logger);
     }
 
     internal async Task Start()
@@ -27,10 +29,12 @@ internal sealed class Process
         var capDevice = SelectCaptureDevice();
         Guard.ThrowIfNull(capDevice);
 
+        _amlFile.Convert(_cliOptions.AmlFile, _cliOptions.GsdFile);
+
         var deviceStore = new DeviceStore();
         using var cap = Capture.Create()
             .WithCapturingDevice(capDevice)
-            .WithEthernetPacketHandler(new PacketHandler(capDevice, deviceStore, _logger, _cliOptions))
+            .WithEthernetPacketHandler(new PacketHandler(capDevice, deviceStore, _amlFile, _logger))
             .WithCaptureFileWriterDevice(GetCaptureFileWriter(_cliOptions))
             .WithLogger(_logger);
 
@@ -112,11 +116,11 @@ internal sealed class Process
 
     private async Task Export(DeviceStore deviceStore)
     {
-        await Exporter.ExportToFile(new XtiExporter(), deviceStore, _cliOptions, _logger);
+        await Exporter.ExportToFile(new XtiExporter(), deviceStore, _cliOptions, _logger, _amlFile);
 
         if (Console.IsOutputRedirected)
         {
-            await Exporter.ExportToCLI(new XtiExporter(), deviceStore, _cliOptions);
+            await Exporter.ExportToCLI(new XtiExporter(), deviceStore, _cliOptions, _logger, _amlFile);
         }
     }
 }
