@@ -57,7 +57,7 @@ jobs:
 
       - name: Push to NuGet
         if: steps.versionize.outcome == 'success'
-        run: dotnet nuget push "/home/runner/work/OC_TcPnScanner/OC_TcPnScanner/src/dsian.TcPnScanner.CLI/bin/release/*.nupkg" --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push "/home/runner/work/OC_TcPnScanner/OC_TcPnScanner/src/dsian.TcPnScanner.CLI/bin/Release/OC.TcPnScanner.CLI.${{env.VERSION}}.nupkg" --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
 
       - name: Publish new release
         if: steps.versionize.outcome == 'success'
