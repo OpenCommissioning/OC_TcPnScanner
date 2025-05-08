@@ -3,7 +3,6 @@ using dsian.TcPnScanner.CLI.PnDevice;
 using Microsoft.Extensions.Logging;
 using PacketDotNet;
 using System.Text;
-using System.Text.Json;
 using SharpPcap;
 
 namespace dsian.TcPnScanner.CLI.Packets;
@@ -52,31 +51,6 @@ internal class PacketHandler : IPacketHandler
                 captureHasStopped = true;
             }
         });
-    }
-
-    private Dictionary<string, string> DeserializeDeviceIds(string? jsonFile)
-    {
-        if (string.IsNullOrWhiteSpace(jsonFile))
-        {
-            return [];
-        }
-
-        if (!File.Exists(jsonFile))
-        {
-            _logger?.LogError("File '{jsonFile}' doesn't exist", jsonFile);
-            return [];
-        }
-
-        try
-        {
-            var json = File.ReadAllText(jsonFile);
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? [];
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, "Failed to deserialize '{jsonFile}'", jsonFile);
-            return [];
-        }
     }
 
     public void HandleEthernetPacket(EthernetPacket ethPacket)
