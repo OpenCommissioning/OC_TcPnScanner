@@ -38,7 +38,7 @@ public class AmlFile(ILogger? logger = null)
         DeviceIdsByName.Clear();
         ConvertedAml.RemoveAll();
 
-        if (amlFilePath is null) return;
+        if (string.IsNullOrEmpty(amlFilePath)) return;
         _aml = XDocument.Load(amlFilePath).Root;
 
         if (_aml is null) return;
@@ -60,6 +60,7 @@ public class AmlFile(ILogger? logger = null)
         }
 
         CreateDeviceIdsByName(ConvertedAml, gsdFolderPath);
+        ConvertedAml.Save($@"{Path.GetTempPath()}OC.TcPnScanner.CLI\ConvertedAml.xml");
     }
 
     private void GetDeviceItemInformation(XElement deviceItem, XElement? parent, XElement deviceElement)
@@ -88,6 +89,11 @@ public class AmlFile(ILogger? logger = null)
         var isSubModule = addresses is not null && parent is not null;
         var hasIOs = addresses?.Aggregate(false, (current, address) => current | GetAddressAttributes(address, moduleElement)) == true;
 
+        if (deviceItem.GetPositionNumber() == 0)
+        {
+            parent?.Add(new XElement("PositionOffset", 1));
+        }
+
         switch (isSubModule)
         {
             case true when hasIOs: //this is a submodule with IOs
@@ -109,8 +115,8 @@ public class AmlFile(ILogger? logger = null)
                 else
                 {
                     var pos = deviceItem.GetPositionNumber();
-                    if (pos == 0) pos = 1;
-                    moduleElement.Name = $"Submodule{pos}";
+                    var offset = int.TryParse(parent?.Element("PositionOffset")?.Value, out var value) ? value : 0;
+                    moduleElement.Name = $"Submodule{pos + offset}";
                     moduleName = $"Module{parent?.GetPositionNumber() + 1}";
                 }
 
@@ -182,6 +188,8 @@ public class AmlFile(ILogger? logger = null)
             }
             DeviceIdsByName.Add(name, deviceId);
         }
+        if (JsonSerializer.Serialize(DeviceIdsByName, JsonSerializerOptions) is not {} deviceIdsByName) return;
+        File.WriteAllText($@"{Path.GetTempPath()}OC.TcPnScanner.CLI\DeviceIdsByName.json", deviceIdsByName);
     }
 
     private Dictionary<string, string> GetDeviceIdsFromGit()
@@ -202,7 +210,7 @@ public class AmlFile(ILogger? logger = null)
 
     private void GetDeviceIdsFromGsdFiles(Dictionary<string, string> deviceIds, string? gsdFolderPath)
     {
-        if (gsdFolderPath is null) return;
+        if (string.IsNullOrEmpty(gsdFolderPath)) return;
         var files = Directory.GetFiles(gsdFolderPath, "*.xml", SearchOption.AllDirectories);
         var additional = new Dictionary<string, string>();
 
@@ -256,7 +264,7 @@ public class AmlFile(ILogger? logger = null)
 
         if (additional.Count == 0) return;
         if (JsonSerializer.Serialize(additional, JsonSerializerOptions) is not {} deviceIdsJson) return;
-        File.WriteAllText($@"{Constants.TEMP_DIR_TEMPLATE}\{Constants.APPNAME_TEMPLATE}\DeviceIds-added.json", deviceIdsJson);
+        File.WriteAllText($@"{Path.GetTempPath()}OC.TcPnScanner.CLI\DeviceIds-added.json", deviceIdsJson);
     }
 
     private static bool GetAddressAttributes(XElement address, XElement moduleElement)
