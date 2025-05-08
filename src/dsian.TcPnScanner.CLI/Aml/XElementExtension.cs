@@ -20,10 +20,14 @@ public static class XElementExtension
             .Descendants("Attribute")
             .Where(x => x.Attribute("Name")?.Value == "ProfinetDeviceName")
             .Select(x => x.Element("Value")?.Value)
+            .FirstOrDefault() ?? element
+            .Descendants("Attribute")
+            .Where(x => x.Attribute("Name")?.Value == "DeviceItemType")
+            .Where(x => x.Element("Value")?.Value == "HeadModule")
+            .Select(x => x.Parent?.Attribute("Name")?.Value)
             .FirstOrDefault();
 
-        var convertedName = ConvertToPnString(name);
-        return convertedName is null ? null : $"{convertedName}{Crc16Arc.Calculate(convertedName):x4}";
+        return ConvertToPnString(name);
     }
 
     public static string? GetPnDeviceNameByPort(this XElement portElement)
@@ -34,6 +38,7 @@ public static class XElementExtension
     private static string? ConvertToPnString(string? value)
     {
         if (value is null) return null;
+        var loweredValue = value.ToLower();
 
         var charMappings = new Dictionary<char, string>
         {
@@ -44,21 +49,28 @@ public static class XElementExtension
             { 'x', "xx" }
         };
 
-        var result = new StringBuilder();
+        var stringBuilder = new StringBuilder();
 
-        foreach (var c in value)
+        foreach (var c in loweredValue)
         {
             if (charMappings.TryGetValue(c, out var mapping))
             {
-                result.Append(mapping);
+                stringBuilder.Append(mapping);
             }
             else
             {
-                result.Append(c);
+                stringBuilder.Append(c);
             }
         }
 
-        return result.ToString();
+        var convertedName = stringBuilder.ToString();
+
+        if (convertedName != loweredValue)
+        {
+            convertedName += $"{Crc16Arc.Calculate(convertedName):x4}";
+        }
+
+        return convertedName;
     }
 
     public static IEnumerable<XElement?> GetDevices(this XElement element)
