@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Reflection;
+using System.Text.Json;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 
@@ -10,6 +11,7 @@ namespace dsian.TcPnScanner.CLI.Aml;
 /// <param name="logger">The logger interface.</param>
 public class AmlFile(ILogger? logger = null)
 {
+    private static readonly string TempDir = $"{Path.GetTempPath()}{Assembly.GetExecutingAssembly().GetName().Name}";
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(){WriteIndented = true};
     private readonly Dictionary<string, string> _linkA = [];
     private readonly Dictionary<string, string> _linkB = [];
@@ -60,7 +62,7 @@ public class AmlFile(ILogger? logger = null)
         }
 
         CreateDeviceIdsByName(ConvertedAml, gsdFolderPath);
-        ConvertedAml.Save($@"{Path.GetTempPath()}OC.TcPnScanner.CLI\ConvertedAml.xml");
+        ConvertedAml.Save($"{TempDir}\\ConvertedAml.xml");
     }
 
     private void GetDeviceItemInformation(XElement deviceItem, XElement? parent, XElement deviceElement)
@@ -189,7 +191,7 @@ public class AmlFile(ILogger? logger = null)
             DeviceIdsByName.Add(name, deviceId);
         }
         if (JsonSerializer.Serialize(DeviceIdsByName, JsonSerializerOptions) is not {} deviceIdsByName) return;
-        File.WriteAllText($@"{Path.GetTempPath()}OC.TcPnScanner.CLI\DeviceIdsByName.json", deviceIdsByName);
+        File.WriteAllText($"{TempDir}\\DeviceIdsByName.json", deviceIdsByName);
     }
 
     private Dictionary<string, string> GetDeviceIdsFromGit()
@@ -264,7 +266,7 @@ public class AmlFile(ILogger? logger = null)
 
         if (additional.Count == 0) return;
         if (JsonSerializer.Serialize(additional, JsonSerializerOptions) is not {} deviceIdsJson) return;
-        File.WriteAllText($@"{Path.GetTempPath()}OC.TcPnScanner.CLI\DeviceIds-added.json", deviceIdsJson);
+        File.WriteAllText($"{TempDir}\\DeviceIds-added.json", deviceIdsJson);
     }
 
     private static bool GetAddressAttributes(XElement address, XElement moduleElement)
