@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file. See [versio
 <a name="1.1.0"></a>
 ## [1.1.0](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.0) (2025-05-14)
 
+<a name="1.1.0"></a>
+## [1.1.0](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.0) (2025-05-14)
+
 ### Features
 
 * implement fragmented connect requests ([0570697](https://www.github.com/OpenCommissioning/OC_TcPnScanner/commit/0570697487dc5fd26fa7116835854585f3e36378))
