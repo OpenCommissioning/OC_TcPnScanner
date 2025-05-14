@@ -76,7 +76,7 @@ internal class PacketHandler : IPacketHandler
                 SendArpResponsePacket(ethPacket);
                 _stopwatch.Restart();
             }
-            else if (ProfinetIoConnectRequestPacket.TryParse(ethPacket, out var pnIoConReqPacket, _logger))
+            else if (ProfinetIoConnectRequestPacket.TryParse(ethPacket, _captureDevice, out var pnIoConReqPacket, _logger))
             {
                 UpdateDevicePnIoConReqPacket(pnIoConReqPacket);
                 _stopwatch.Restart();

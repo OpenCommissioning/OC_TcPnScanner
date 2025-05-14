@@ -13,7 +13,7 @@
         <Description>Scans a PROFINET and adds all Stations to a PROFINET IO Device (TF6270)</Description>
         <Copyright>Copyright (c) 2023 densogiaichned</Copyright>
         <Title>TwinCAT Profinet Device Scanner</Title>
-        <Version>1.0.1</Version>
+        <Version>1.1.0</Version>
         <AssemblyVersion>$(Version)</AssemblyVersion>
         <FileVersion>$(Version)</FileVersion>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>

@@ -49,7 +49,19 @@ internal class DeviceStore : IDeviceStore
             return false;
         }
 
-        _devices[devicePhysicalAddress].PnIoConnectRequestPacket = profinetIoConnectRequestPacket;
+        var device = _devices[devicePhysicalAddress];
+
+        if (device.PnIoConnectRequestPacket is not null)
+        {
+            device.PnIoConnectRequestPacket.FragmentedData.AddRange(profinetIoConnectRequestPacket.FragmentedData);
+            if (profinetIoConnectRequestPacket.LastFragment)
+            {
+                device.PnIoConnectRequestPacket.UpdateFromFragmentedData();
+            }
+            return true;
+        }
+
+        device.PnIoConnectRequestPacket = profinetIoConnectRequestPacket;
         return true;
     }
 
