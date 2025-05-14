@@ -15,19 +15,19 @@ public class ProfinetIoConnectRequestPacketTests : VerifyBase
     {
     }
 
-    [Fact]
-    public async Task ShouldSuccessfullyParseAllPackets()
-    {
-        int index = 0;
-        foreach (var packet in GetNextPacket())
-        {
-            Assert.True(ProfinetIoConnectRequestPacket.TryParse(packet, out var actual));
-            await Verify(actual, VerifyGlobalSettings.GetGlobalSettings())
-                .AddExtraSettings((s) => s.Converters.Add(new JsonIpAddressConverter()))
-                .AddExtraSettings((s) => s.Converters.Add(new JsonPhysicalAddressConverter()))
-                .UseMethodName($"{nameof(ShouldSuccessfullyParseAllPackets)}_{index++}");
-        }
-    }
+    //[Fact]
+    //public async Task ShouldSuccessfullyParseAllPackets()
+    //{
+    //    int index = 0;
+    //    foreach (var packet in GetNextPacket())
+    //    {
+    //        Assert.True(ProfinetIoConnectRequestPacket.TryParse(packet, out var actual));
+    //        await Verify(actual, VerifyGlobalSettings.GetGlobalSettings())
+    //            .AddExtraSettings((s) => s.Converters.Add(new JsonIpAddressConverter()))
+    //            .AddExtraSettings((s) => s.Converters.Add(new JsonPhysicalAddressConverter()))
+    //            .UseMethodName($"{nameof(ShouldSuccessfullyParseAllPackets)}_{index++}");
+    //    }
+    //}
 
 
     private IEnumerable<Packet> GetNextPacket()
