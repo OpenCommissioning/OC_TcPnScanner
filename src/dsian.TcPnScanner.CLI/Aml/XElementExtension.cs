@@ -42,6 +42,7 @@ public static class XElementExtension
 
         var charMappings = new Dictionary<char, string>
         {
+            { '.', ".xd" },
             { '=', "xv" },
             { '+', "xn" },
             { '_', "xb" },
