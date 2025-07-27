@@ -30,9 +30,14 @@ public static class XElementExtension
         return ConvertToPnString(name);
     }
 
-    public static string? GetPnDeviceNameByPort(this XElement portElement)
+    public static string? GetPnDeviceNameBackwardsRecursive(this XElement? element)
     {
-        return portElement.Parent?.GetEthernetNode()?.GetPnDeviceNameConverted();
+        while (true)
+        {
+            if (element is null) return null;
+            if (element.IsDevice()) return element.GetPnDeviceNameConverted();
+            element = element.Parent;
+        }
     }
 
     private static string? ConvertToPnString(string? value)
@@ -82,12 +87,11 @@ public static class XElementExtension
             .Select(x => x.Parent);
     }
 
-    private static XElement? GetEthernetNode(this XElement element)
+    private static bool IsDevice(this XElement? element)
     {
-        return element
-            .Descendants("SupportedRoleClass")
-            .FirstOrDefault(x => x.Attribute("RefRoleClassPath")?.Value == "AutomationProjectConfigurationRoleClassLib/Node")?
-            .Parent;
+        return element?
+            .Element("SupportedRoleClass")?
+            .Attribute("RefRoleClassPath")?.Value == "AutomationProjectConfigurationRoleClassLib/Device";
     }
 
     public static IEnumerable<XElement> GetDeviceItems(this XElement element)
@@ -122,9 +126,9 @@ public static class XElementExtension
         return element.Attribute("ID")?.Value;
     }
 
-    public static int GetPositionNumber(this XElement element)
+    public static int GetPositionNumber(this XElement? element)
     {
-        var number = element.GetAttributeValue("PositionNumber");
+        var number = element?.GetAttributeValue("PositionNumber");
         if (number is null) return -1;
 
         if (int.TryParse(number, out var result))
@@ -149,5 +153,31 @@ public static class XElementExtension
             .Elements("Attribute")
             .FirstOrDefault(x => x.Attribute("Name")?.Value == attributeName)?
             .Element("Value")?.Value;
+    }
+
+    public static void SetAttribute(this XElement element, string attributeName, string attributeValue)
+    {
+        var attribute = element.Attribute(attributeName);
+        if (attribute is null)
+        {
+            element.Add(new XAttribute(attributeName, attributeValue));
+            return;
+        }
+        attribute.Value = attributeValue;
+    }
+
+    public static int GetAndIncrementAttribute(this XElement? element, string attributeName)
+    {
+        if (element is null) return 1;
+        var attribute = element.Attribute(attributeName);
+        if (attribute is null)
+        {
+            element.Add(new XAttribute(attributeName, 2));
+            return 1;
+        }
+
+        var value = int.TryParse(attribute.Value, out var val) ? val : 1;
+        attribute.Value = (value + 1).ToString();
+        return value;
     }
 }

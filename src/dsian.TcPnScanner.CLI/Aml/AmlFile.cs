@@ -92,11 +92,6 @@ public class AmlFile(ILogger? logger = null)
         var hasIOs = addresses?.Aggregate(false, (hasIOs, address) =>
             hasIOs | GetAddressAttributes(address, convertedDeviceItem)) == true;
 
-        if (deviceItem.GetPositionNumber() == 0)
-        {
-            deviceItemParent?.Add(new XElement("PositionOffset", 1));
-        }
-
         switch (isSubModule)
         {
             case true when hasIOs: //this is a submodule with I/O
@@ -110,17 +105,16 @@ public class AmlFile(ILogger? logger = null)
                 //Because this is a submodule, add it to a module
                 string moduleName;
 
-                if (deviceItemParent?.GetPositionNumber() == 0)
+                if (deviceItemParent.GetPositionNumber() == 0)
                 {
-                    convertedDeviceItem.Name = "Submodule1";
+                    convertedDeviceItem.Name = "IoModule1";
                     moduleName = $"Module{deviceItem.GetPositionNumber() + 1}";
                 }
                 else
                 {
-                    var pos = deviceItem.GetPositionNumber();
-                    var offset = int.TryParse(deviceItemParent?.Element("PositionOffset")?.Value, out var value) ? value : 0;
-                    convertedDeviceItem.Name = $"Submodule{pos + offset}";
-                    moduleName = $"Module{deviceItemParent?.GetPositionNumber() + 1}";
+                    var index = deviceItemParent.GetAndIncrementAttribute("IoModuleIndex");
+                    convertedDeviceItem.Name = $"IoModule{index}";
+                    moduleName = $"Module{deviceItemParent.GetPositionNumber() + 1}";
                 }
 
                 //Module does not exist yet -> create new
@@ -272,7 +266,7 @@ public class AmlFile(ILogger? logger = null)
 
     private static bool GetAddressAttributes(XElement address, XElement convertedDeviceItem)
     {
-        var element = new XElement("Addresses");
+        var element = new XElement("Address");
         var ioType = address.GetAttributeValue("IoType");
         var hasIOs = false;
         if (ioType is "Input" or "Output")
@@ -297,12 +291,12 @@ public class AmlFile(ILogger? logger = null)
             var linkedPort = GetLinkedPort(id);
             if (linkedPort is null) continue;
 
-            var linkedDeviceName = linkedPort.GetPnDeviceNameByPort();
+            var linkedDeviceName = linkedPort.GetPnDeviceNameBackwardsRecursive();
             if (linkedDeviceName is null) continue;
 
             var connectedPortNr = ".port-" + linkedPort.GetPositionNumber().ToString("000");
 
-            var elem = new XElement("Port" + port?.GetPositionNumber());
+            var elem = new XElement("Port" + port.GetPositionNumber());
             elem.Add(new XAttribute("RemPeerPort",linkedDeviceName + connectedPortNr));
             portElement.Add(elem);
         }

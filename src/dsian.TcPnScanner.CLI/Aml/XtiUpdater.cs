@@ -1,9 +1,10 @@
-﻿using System.Xml.Linq;
+﻿using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace dsian.TcPnScanner.CLI.Aml;
 
-internal class XtiUpdater(ILogger? logger = null)
+internal partial class XtiUpdater(ILogger? logger = null)
 {
     private XElement? _amlConverted;
     private List<string> _deviceNames = [];
@@ -73,55 +74,32 @@ internal class XtiUpdater(ILogger? logger = null)
 
     private void UpdateModule(XElement module, int moduleIndex, string boxName)
     {
-        var submoduleIndex = 1;
+        var portModuleIndex = 1;
+        var ioModuleIndex = 1;
         foreach (var subModule in module.Elements("SubModule"))
         {
-            UpdateSubModule(subModule, submoduleIndex, moduleIndex, boxName);
-            submoduleIndex++;
+           UpdateSubModule(subModule, boxName, moduleIndex, ref portModuleIndex, ref ioModuleIndex);
         }
     }
 
-    private static void SetAttribute(XElement element, string attributeName, string attributeValue)
-    {
-        var attribute = element.Attribute(attributeName);
-        if (attribute is null)
-        {
-            element.Add(new XAttribute(attributeName, attributeValue));
-            return;
-        }
-        attribute.Value = attributeValue;
-    }
-
-    private void UpdateSubModule(XElement subModule, int submoduleIndex, int moduleIndex, string boxName)
+    private void UpdateSubModule(XElement subModule, string boxName, int moduleIndex, ref int portModuleIndex, ref int ioModuleIndex)
     {
         var subSlotNumber = subModule.Attribute("SubSlotNumber")?.Value;
         if (subSlotNumber is null) return;
 
         var typeOfSubmodule = GetTypeOfSubmodule(subSlotNumber);
-        var remPeerPort = GetRemPeerPort(typeOfSubmodule, boxName, submoduleIndex, moduleIndex);
+        var remPeerPort = GetRemPeerPort(typeOfSubmodule, boxName, moduleIndex, portModuleIndex);
 
-        SetAttribute(subModule, "TypeOfSubModule", typeOfSubmodule);
+        subModule.SetAttribute("TypeOfSubModule", typeOfSubmodule);
 
         if (typeOfSubmodule == "2")
         {
-            SetAttribute(subModule, "PortData", "00000000000000000000000000000000000000000000000000000000");
+            portModuleIndex++;
+            subModule.SetAttribute("PortData", "00000000000000000000000000000000000000000000000000000000");
             if (remPeerPort is not null)
             {
-                SetAttribute(subModule, "RemPeerPort", remPeerPort);
+                subModule.SetAttribute("RemPeerPort", remPeerPort);
             }
-        }
-
-        var matchedSubmodule = GetMatchedSubmodule(boxName, moduleIndex, submoduleIndex);
-        if (matchedSubmodule is null) return;
-
-        var name = subModule.Element("Name")?.Value;
-        if (name is not null)
-        {
-            if (IsFailsafe(matchedSubmodule))
-            {
-                name += " #failsafe";
-            }
-            subModule.Element("Name")!.Value = name;
         }
 
         var inputVar = subModule
@@ -132,8 +110,24 @@ internal class XtiUpdater(ILogger? logger = null)
             .Elements("Vars")
             .FirstOrDefault(x => x.Attribute("VarGrpType")?.Value == "2");
 
-        if (inputVar != null) SetAddress(inputVar, matchedSubmodule, true);
-        if (outputVar != null) SetAddress(outputVar, matchedSubmodule, false);
+        if (inputVar is null && outputVar is null) return;
+        ioModuleIndex++;
+
+        var matchedIoModule = GetMatchedIoModule(boxName, moduleIndex, ioModuleIndex);
+        if (matchedIoModule is null) return;
+
+        var name = subModule.Element("Name")?.Value;
+        if (name is not null)
+        {
+            if (IsFailsafe(matchedIoModule))
+            {
+                name += " #failsafe";
+            }
+            subModule.Element("Name")!.Value = name;
+        }
+
+        if (inputVar != null) SetAddress(inputVar, matchedIoModule, true);
+        if (outputVar != null) SetAddress(outputVar, matchedIoModule, false);
     }
 
     private static void SetAddress(XElement? var, XElement matchedSubmodule, bool isInput)
@@ -175,7 +169,7 @@ internal class XtiUpdater(ILogger? logger = null)
         }
     }
 
-    private string? GetRemPeerPort(string typeOfSubmodule, string boxName, int submoduleIndex, int moduleIndex)
+    private string? GetRemPeerPort(string typeOfSubmodule, string boxName, int moduleIndex, int portModuleIndex)
     {
         if (typeOfSubmodule != "2") return null;
 
@@ -184,11 +178,14 @@ internal class XtiUpdater(ILogger? logger = null)
             var remPeerPort = GetMatchedDevice(boxName)?
                 .Element($"Module{moduleIndex}")?
                 .Element("Ports")?
-                .Element("Port" + (submoduleIndex - 2))?
+                .Element($"Port{portModuleIndex}")?
                 .Attribute("RemPeerPort")?
                 .Value;
 
-            return _deviceNames.Any(x => x == remPeerPort?.Split('.')[0]) ? remPeerPort : null;
+            if (remPeerPort is null) return null;
+
+            var remPeerDeviceName = GetPortRegex().Replace(remPeerPort, "");
+            return _deviceNames.Any(x => x == remPeerDeviceName) ? remPeerPort : null;
         }
         catch
         {
@@ -196,13 +193,13 @@ internal class XtiUpdater(ILogger? logger = null)
         }
     }
 
-    private XElement? GetMatchedSubmodule(string boxName, int moduleIndex, int submoduleIndex)
+    private XElement? GetMatchedIoModule(string boxName, int moduleIndex, int ioModuleIndex)
     {
         try
         {
             return GetMatchedDevice(boxName)?
                 .Element($"Module{moduleIndex}")?
-                .Element($"Submodule{submoduleIndex}");
+                .Element($"IoModule{ioModuleIndex}");
         }
         catch
         {
@@ -212,7 +209,7 @@ internal class XtiUpdater(ILogger? logger = null)
 
     private static int GetStartAddress(XElement matchedSubmodule, string filter)
     {
-        var addresses = matchedSubmodule.Elements("Addresses");
+        var addresses = matchedSubmodule.Elements("Address");
 
         foreach (var address in addresses)
         {
@@ -229,4 +226,7 @@ internal class XtiUpdater(ILogger? logger = null)
     {
         return bool.TryParse(matchedSubmodule.Attribute("IsFailsafe")?.Value, out var result) && result;
     }
+
+    [GeneratedRegex(@"\.port-\d+")]
+    private static partial Regex GetPortRegex();
 }
