@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file. See [versionize](https://github.com/versionize/versionize) for commit guidelines.
 
+<a name="1.1.1"></a>
+## [1.1.1](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.1) (2025-07-28)
+
 <a name="1.1.0"></a>
 ## [1.1.0](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.0) (2025-05-14)
 
