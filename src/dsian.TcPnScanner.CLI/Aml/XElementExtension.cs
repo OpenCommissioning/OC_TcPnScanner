@@ -16,18 +16,18 @@ public static class XElementExtension
 
     public static string? GetPnDeviceNameConverted(this XElement element)
     {
-        var name = element
+        return element
             .Descendants("Attribute")
             .Where(x => x.Attribute("Name")?.Value == "ProfinetDeviceName")
             .Select(x => x.Element("Value")?.Value)
-            .FirstOrDefault() ?? element
+            .FirstOrDefault() ??
+               element
             .Descendants("Attribute")
             .Where(x => x.Attribute("Name")?.Value == "DeviceItemType")
             .Where(x => x.Element("Value")?.Value == "HeadModule")
             .Select(x => x.Parent?.Attribute("Name")?.Value)
-            .FirstOrDefault();
-
-        return ConvertToPnString(name);
+            .FirstOrDefault()
+            .ConvertToPnString();
     }
 
     public static string? GetPnDeviceNameBackwardsRecursive(this XElement? element)
@@ -40,7 +40,7 @@ public static class XElementExtension
         }
     }
 
-    private static string? ConvertToPnString(string? value)
+    private static string? ConvertToPnString(this string? value)
     {
         if (value is null) return null;
         var loweredValue = value.ToLower();
