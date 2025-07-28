@@ -52,119 +52,114 @@ public class AmlFile(ILogger? logger = null)
             if (device is null) continue;
             var name = device.GetPnDeviceNameConverted();
             if (name is null) continue;
-            var deviceElement = new XElement("Device", new XAttribute("Name", name));
+            var convertedDevice = new XElement("Device", new XAttribute("Name", name));
             foreach (var deviceItem in device.GetDeviceItems())
             {
-                GetDeviceItemInformation(deviceItem, null, deviceElement);
+                GetDeviceItemInformation(deviceItem, null, convertedDevice);
             }
 
-            ConvertedAml.Add(deviceElement);
+            ConvertedAml.Add(convertedDevice);
         }
 
         CreateDeviceIdsByName(ConvertedAml, gsdFolderPath);
         ConvertedAml.Save($"{TempDir}\\ConvertedAml.xml");
     }
 
-    private void GetDeviceItemInformation(XElement deviceItem, XElement? parent, XElement deviceElement)
+    private void GetDeviceItemInformation(XElement deviceItem, XElement? deviceItemParent, XElement convertedDevice)
     {
-        GetDeviceItemAttributes(deviceItem, parent, deviceElement);
+        GetDeviceItemAttributes(deviceItem, deviceItemParent, convertedDevice);
 
         //Call recursive
         foreach (var deviceSubItem in deviceItem.GetDeviceItems())
         {
-            GetDeviceItemInformation(deviceSubItem, deviceItem, deviceElement);
+            GetDeviceItemInformation(deviceSubItem, deviceItem, convertedDevice);
         }
     }
 
-    private void GetDeviceItemAttributes(XElement deviceItem, XElement? parent, XElement deviceElement)
+    private void GetDeviceItemAttributes(XElement deviceItem, XElement? deviceItemParent, XElement convertedDevice)
     {
-        var moduleElement = new XElement($"Module{deviceItem.GetPositionNumber() + 1}");
-
+        var convertedDeviceItem = new XElement($"Module{deviceItem.GetPositionNumber() + 1}");
         var portElement = new XElement("Ports");
-        if (deviceElement.Element("Module1")?.Element(portElement.Name) is null)
+
+        if (convertedDevice.Element("Module1")?.Element(portElement.Name) is null)
         {
             GetNetworkInformation(deviceItem, portElement);
         }
 
         //Read address infos and check if this is a submodule
         var addresses = deviceItem.GetAddresses();
-        var isSubModule = addresses is not null && parent is not null;
-        var hasIOs = addresses?.Aggregate(false, (current, address) => current | GetAddressAttributes(address, moduleElement)) == true;
-
-        if (deviceItem.GetPositionNumber() == 0)
-        {
-            parent?.Add(new XElement("PositionOffset", 1));
-        }
+        var isSubModule = addresses is not null && deviceItemParent is not null;
+        var hasIOs = addresses?.Aggregate(false, (hasIOs, address) =>
+            hasIOs | GetAddressAttributes(address, convertedDeviceItem)) == true;
 
         switch (isSubModule)
         {
-            case true when hasIOs: //this is a submodule with IOs
+            case true when hasIOs: //this is a submodule with I/O
             {
                 //Read failsafe info
                 if (deviceItem.IsProfisafeItem())
                 {
-                    moduleElement.Add(new XAttribute("IsFailsafe", true));
+                    convertedDeviceItem.Add(new XAttribute("IsFailsafe", true));
                 }
 
-                //Because this is a submodule, add this element to a module
+                //Because this is a submodule, add it to a module
                 string moduleName;
 
-                if (parent?.GetPositionNumber() == 0)
+                if (deviceItemParent.GetPositionNumber() == 0)
                 {
-                    moduleElement.Name = "Submodule1";
+                    convertedDeviceItem.Name = "IoModule1";
                     moduleName = $"Module{deviceItem.GetPositionNumber() + 1}";
                 }
                 else
                 {
-                    var pos = deviceItem.GetPositionNumber();
-                    var offset = int.TryParse(parent?.Element("PositionOffset")?.Value, out var value) ? value : 0;
-                    moduleElement.Name = $"Submodule{pos + offset}";
-                    moduleName = $"Module{parent?.GetPositionNumber() + 1}";
+                    var index = deviceItemParent.GetAndIncrementAttribute("IoModuleIndex");
+                    convertedDeviceItem.Name = $"IoModule{index}";
+                    moduleName = $"Module{deviceItemParent.GetPositionNumber() + 1}";
                 }
 
                 //Module does not exist yet -> create new
-                if (!deviceElement.ChildExists(moduleName))
+                if (!convertedDevice.ChildExists(moduleName))
                 {
-                    deviceElement.Add(new XElement(moduleName));
+                    convertedDevice.Add(new XElement(moduleName));
                 }
 
                 //Add submodule to module
-                deviceElement.Element(moduleName)?.Add(moduleElement);
+                convertedDevice.Element(moduleName)?.Add(convertedDeviceItem);
                 break;
             }
-            case false: //This is a module -> add to device directly
+            case false: //This is a module -> added to the convertedDevice directly
             {
-                if (deviceElement.ChildExists(moduleElement.Name))
+                if (convertedDevice.ChildExists(convertedDeviceItem.Name))
                 {
-                    foreach (var item in moduleElement.Elements())
+                    foreach (var item in convertedDeviceItem.Elements())
                     {
-                        deviceElement.Element(moduleElement.Name)?.Add(item);
+                        convertedDevice.Element(convertedDeviceItem.Name)?.Add(item);
                     }
                 }
                 else
                 {
-                    deviceElement.Add(moduleElement);
+                    convertedDevice.Add(convertedDeviceItem);
                 }
 
                 var typeIdentifier = deviceItem.GetAttributeValue("TypeIdentifier");
-                if (typeIdentifier is not null && !deviceElement.AttributeExists("TypeIdentifier"))
+                if (typeIdentifier is not null && !convertedDevice.AttributeExists("TypeIdentifier"))
                 {
                     if (typeIdentifier.Contains("OrderNumber:") || typeIdentifier.Contains("GSD:"))
                     {
-                        deviceElement.Add(new XAttribute("TypeIdentifier", typeIdentifier));
+                        convertedDevice.Add(new XAttribute("TypeIdentifier", typeIdentifier));
                     }
                 }
                 break;
             }
         }
 
-        //Add ports to module if available
+        //Add ports to Module1, if any
         if (!portElement.HasElements) return;
-        if (!deviceElement.ChildExists("Module1"))
+        if (!convertedDevice.ChildExists("Module1"))
         {
-            deviceElement.Add(new XElement("Module1"));
+            convertedDevice.Add(new XElement("Module1"));
         }
-        deviceElement.Element("Module1")?.Add(portElement);
+        convertedDevice.Element("Module1")?.Add(portElement);
     }
 
     private void CreateDeviceIdsByName(XElement rootElement, string? gsdFolderPath)
@@ -269,9 +264,9 @@ public class AmlFile(ILogger? logger = null)
         File.WriteAllText($"{TempDir}\\DeviceIds-added.json", deviceIdsJson);
     }
 
-    private static bool GetAddressAttributes(XElement address, XElement moduleElement)
+    private static bool GetAddressAttributes(XElement address, XElement convertedDeviceItem)
     {
-        var element = new XElement("Addresses");
+        var element = new XElement("Address");
         var ioType = address.GetAttributeValue("IoType");
         var hasIOs = false;
         if (ioType is "Input" or "Output")
@@ -282,7 +277,7 @@ public class AmlFile(ILogger? logger = null)
             hasIOs = true;
         }
 
-        moduleElement.Add(element);
+        convertedDeviceItem.Add(element);
         return hasIOs;
     }
 
@@ -296,12 +291,12 @@ public class AmlFile(ILogger? logger = null)
             var linkedPort = GetLinkedPort(id);
             if (linkedPort is null) continue;
 
-            var linkedDeviceName = linkedPort.GetPnDeviceNameByPort();
+            var linkedDeviceName = linkedPort.GetPnDeviceNameBackwardsRecursive();
             if (linkedDeviceName is null) continue;
 
             var connectedPortNr = ".port-" + linkedPort.GetPositionNumber().ToString("000");
 
-            var elem = new XElement("Port" + port?.GetPositionNumber());
+            var elem = new XElement("Port" + port.GetPositionNumber());
             elem.Add(new XAttribute("RemPeerPort",linkedDeviceName + connectedPortNr));
             portElement.Add(elem);
         }
