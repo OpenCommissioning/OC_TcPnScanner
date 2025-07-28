@@ -104,38 +104,39 @@ internal partial class XtiUpdater(ILogger? logger = null)
 
         var inputVar = subModule
             .Elements("Vars")
-            .FirstOrDefault(x => x.Attribute("VarGrpType")?.Value == "1");
+            .FirstOrDefault(x => x.Attribute("VarGrpType")?.Value == "1")?
+            .Element("Var");
 
         var outputVar = subModule
             .Elements("Vars")
-            .FirstOrDefault(x => x.Attribute("VarGrpType")?.Value == "2");
+            .FirstOrDefault(x => x.Attribute("VarGrpType")?.Value == "2")?
+            .Element("Var");
 
         if (inputVar is null && outputVar is null) return;
-        ioModuleIndex++;
 
         var matchedIoModule = GetMatchedIoModule(boxName, moduleIndex, ioModuleIndex);
+        ioModuleIndex++;
         if (matchedIoModule is null) return;
 
-        var name = subModule.Element("Name")?.Value;
+        var name = subModule.Element("Name");
         if (name is not null)
         {
             if (IsFailsafe(matchedIoModule))
             {
-                name += " #failsafe";
+                name.Value += " #failsafe";
             }
-            subModule.Element("Name")!.Value = name;
         }
 
-        if (inputVar != null) SetAddress(inputVar, matchedIoModule, true);
-        if (outputVar != null) SetAddress(outputVar, matchedIoModule, false);
+        SetAddress(inputVar, matchedIoModule, true);
+        SetAddress(outputVar, matchedIoModule, false);
     }
 
-    private static void SetAddress(XElement? var, XElement matchedSubmodule, bool isInput)
+    private static void SetAddress(XElement? var, XElement matchedIoModule, bool isInput)
     {
-        var name = var?.Element("Var")?.Element("Name");
+        var name = var?.Element("Name");
         if (name is null) return;
 
-        var address = GetStartAddress(matchedSubmodule, isInput ? "Output" : "Input");
+        var address = GetStartAddress(matchedIoModule, isInput ? "Output" : "Input");
         if (address == -1) return;
 
         name.Value = isInput ? $"Q{address}" : $"I{address}";
