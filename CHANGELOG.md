@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [versionize](https://github.com/versionize/versionize) for commit guidelines.
 
+<a name="1.1.4"></a>
+## [1.1.4](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.4) (2026-05-12)
+
+### Bug Fixes
+
+* explicitly set c# langugage version to 12 due to compatibility issues with latest version ([5616f12](https://www.github.com/OpenCommissioning/OC_TcPnScanner/commit/5616f12cd4e0113049190519d0a05385281ae1fc))
+
 <a name="1.1.3"></a>
 ## [1.1.3](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.3) (2026-05-12)
 
