@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [versionize](https://github.com/versionize/versionize) for commit guidelines.
 
+<a name="1.1.5"></a>
+## [1.1.5](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.5) (2026-05-12)
+
+### Bug Fixes
+
+* release pipeline step order ([c640400](https://www.github.com/OpenCommissioning/OC_TcPnScanner/commit/c6404003b1f8fddbb82e1c6dd53d0a0c7797ba17))
+
 <a name="1.1.4"></a>
 ## [1.1.4](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.4) (2026-05-12)
 
