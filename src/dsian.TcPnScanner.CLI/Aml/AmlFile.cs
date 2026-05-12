@@ -191,7 +191,7 @@ public class AmlFile(ILogger? logger = null)
 
     private Dictionary<string, string> GetDeviceIdsFromGit()
     {
-        const string url = "https://raw.githubusercontent.com/opencommissioning/OC_ProfinetDeviceIds/master/DeviceIds.json";
+        const string url = "https://raw.githubusercontent.com/opencommissioning/OC_TcPnScanner/devicelist/DeviceIds.json";
         using var client = new HttpClient();
         try
         {
