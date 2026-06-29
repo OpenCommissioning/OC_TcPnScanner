@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [versionize](https://github.com/versionize/versionize) for commit guidelines.
 
+<a name="1.1.8"></a>
+## [1.1.8](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.8) (2026-06-29)
+
+### Bug Fixes
+
+* nameOfStation always to lower ([27d9d1c](https://www.github.com/OpenCommissioning/OC_TcPnScanner/commit/27d9d1ccf0eccfddf786d79224e357a9a8c95e38))
+
 <a name="1.1.6"></a>
 ## [1.1.6](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.6) (2026-06-29)
 
