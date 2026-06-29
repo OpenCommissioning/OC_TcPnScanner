@@ -302,7 +302,7 @@ public class AmlFile(ILogger? logger = null)
         }
     }
 
-    public static bool ConvertPnNames { get; set; } = true;
+    public static bool ConvertPnNames { get; set; }
 
     private XElement? GetLinkedPort(string id)
     {

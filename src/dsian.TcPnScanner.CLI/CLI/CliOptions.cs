@@ -39,5 +39,5 @@ public sealed record CliOptions
     public string? GsdFile { get; init; }
 
     [Option("convert-pn-names", Required = false, HelpText = "Convert PnNames with special characters.")]
-    public bool ConvertPnNames { get; init; } =  true;
+    public bool ConvertPnNames { get; init; }
 }
