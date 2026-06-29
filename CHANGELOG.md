@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [versionize](https://github.com/versionize/versionize) for commit guidelines.
 
+<a name="1.1.6"></a>
+## [1.1.6](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.6) (2026-06-29)
+
+### Bug Fixes
+
+* add an option to enable/disable the conversion of PnNames ([eb5227b](https://www.github.com/OpenCommissioning/OC_TcPnScanner/commit/eb5227bb19c96603a073772bd77d4428034dcffa))
+
 <a name="1.1.5"></a>
 ## [1.1.5](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.5) (2026-05-12)
 
