@@ -183,7 +183,7 @@ public class AmlFile(ILogger? logger = null)
                 }
                 continue;
             }
-            DeviceIdsByName.Add(name, deviceId);
+            DeviceIdsByName.Add(name.ToLower(), deviceId);
         }
         if (JsonSerializer.Serialize(DeviceIdsByName, JsonSerializerOptions) is not {} deviceIdsByName) return;
         File.WriteAllText($"{TempDir}\\DeviceIdsByName.json", deviceIdsByName);

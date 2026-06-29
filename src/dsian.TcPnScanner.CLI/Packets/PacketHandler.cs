@@ -130,7 +130,7 @@ internal class PacketHandler : IPacketHandler
 
     private byte[] VendorAndDeviceId(ProfinetDcpIdentRequestPacket pnPacket)
     {
-        if (!_deviceIds.TryGetValue(pnPacket.NameOfStation, out var id)) return [];
+        if (!_deviceIds.TryGetValue(pnPacket.NameOfStation.ToLower(), out var id)) return [];
 
         try
         {
