@@ -43,6 +43,7 @@ public static class XElementExtension
     private static string? ConvertToPnString(this string? value)
     {
         if (value is null) return null;
+        if (!AmlFile.ConvertPnNames) return value;
         var loweredValue = value.ToLower();
 
         var charMappings = new Dictionary<char, string>

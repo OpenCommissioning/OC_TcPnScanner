@@ -1,4 +1,5 @@
 
+using dsian.TcPnScanner.CLI.Aml;
 using dsian.TcPnScanner.CLI.Export;
 using dsian.TcPnScanner.CLI.Export.TC;
 using dsian.TcPnScanner.CLI.Packets;
@@ -29,6 +30,7 @@ internal sealed class Process
         var capDevice = SelectCaptureDevice();
         Guard.ThrowIfNull(capDevice);
 
+        AmlFile.ConvertPnNames = _cliOptions.ConvertPnNames;
         _amlFile.Convert(_cliOptions.AmlFile, _cliOptions.GsdFile);
 
         var deviceStore = new DeviceStore();

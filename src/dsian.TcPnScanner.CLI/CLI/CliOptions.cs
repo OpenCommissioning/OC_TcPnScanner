@@ -37,4 +37,7 @@ public sealed record CliOptions
 
     [Option("gsd-path", Required = false, HelpText = "Path to a folder containing GSDML files.")]
     public string? GsdFile { get; init; }
+
+    [Option("convert-pn-names", Required = false, HelpText = "Convert PnNames with special characters.")]
+    public bool ConvertPnNames { get; init; } =  true;
 }
