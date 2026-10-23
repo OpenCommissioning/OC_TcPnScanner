@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [versionize](https://github.com/versionize/versionize) for commit guidelines.
 
+<a name="1.2.0"></a>
+## [1.2.0](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.2.0) (2026-10-23)
+
+### Features
+
+* code base restructure ([89a509b](https://www.github.com/OpenCommissioning/OC_TcPnScanner/commit/89a509b55c1ed5ed4f0a430e0ad7c58a90eac3c5))
+
+### Bug Fixes
+
+* adapt git fetch step to get latest tags ([1bb0ddb](https://www.github.com/OpenCommissioning/OC_TcPnScanner/commit/1bb0ddb207284a3a94f6cb7b25d94d69ed9c7149))
+* remove deprecated changelog tags ([a763ecb](https://www.github.com/OpenCommissioning/OC_TcPnScanner/commit/a763ecb1fd47ad1b408d0b750e434a3b37bbfced))
+
 <a name="1.1.8"></a>
 ## [1.1.8](https://www.github.com/OpenCommissioning/OC_TcPnScanner/releases/tag/v1.1.8) (2026-06-29)
 
