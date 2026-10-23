@@ -42,14 +42,9 @@ Install via [dotnet tool install](https://learn.microsoft.com/en-us/dotnet/core/
 ```sh
 dotnet tool install OC.TcPnScanner.CLI -g
 ```
-outputs
-```sh
-You can invoke the tool using the following command: OC.TcPnScanner.CLI
-Tool 'oc.tcpnscanner.cli' (version '0.1.0') was successfully installed.
-```
 
 ### Prerequisites
-To use `OC.TcPnScanner.CLI`, you need to have `.NET8` or later installed on your machine.
+To use `OC.TcPnScanner.CLI`, you need to have `.NET9` or later installed on your machine.
 You can download it from the official website: https://dotnet.microsoft.com/download.
 
 ## Update
@@ -61,10 +56,6 @@ dotnet tool update OC.TcPnScanner.CLI -g
 ```sh
 dotnet tool uninstall OC.TcPnScanner.CLI -g
 ```
-outputs
-```sh
-Tool 'oc.tcpnscanner.cli' (version '0.1.0') was successfully uninstalled.
-```
 
 ## Usage
 
@@ -74,7 +65,6 @@ Tool 'oc.tcpnscanner.cli' (version '0.1.0') was successfully uninstalled.
     ```
 * It will ask for a capturing device:
     ```sh
-
     The following devices are available on this machine:
     ----------------------------------------------------
 
@@ -105,7 +95,6 @@ Tool 'oc.tcpnscanner.cli' (version '0.1.0') was successfully uninstalled.
    ```sh
    [16:09:15 INF] 📝 Exported devices to C:\Users\densogiaichned\AppData\Local\Temp\OC.TcPnScanner.CLI\controller (Profinet Device).xti
    ```
-  > See [samples/sample-controller.xti](samples/sample-controller.xti).
 
 > See [Options](#options) for more options.
 
@@ -114,34 +103,7 @@ This tool supports piping.
 When the console output is redirected, only the generated `*.xti`-file is printed to console.
 In case of a exception, the error is printed to console, and the application exits with exit code `> 0`.
 
-However, if piping is enabled, you have to specify a capture-device with [option](#options) `-d` or `-f`:
-```sh
-OC.TcPnScanner.CLI | echo
-❌ A critical error occurred!
-Provide option '-d'/'--capture-device' or '-f'/'--pcap-file' if Console output is redirected
-```
-#### Example
-Console output is redirected / piped into `echo`:
-```sh
-OC.TcPnScanner.CLI -f ./samples/sample-capture.pcap | echo
-```
-outputs
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<TcSmItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" TcSmVersion="1" TcVersion="3.1.4024.0" ClassName="CDevEthernetProtocolPnSlaveDef" SubType="115">
-  <Device Id="1" DevType="115" AmsPort="65535" AmsNetId="127.0.0.1.2.1" RemoteName="">
-    <Name>__FILENAME__</Name>
-    <Image Id="1" AddrType="1" ImageType="3" SizeIn="0" SizeOut="0">
-      <Name>Image</Name>
-    </Image>
-    <Box Id="1" BoxType="9131">
-      <Name>pn-io</Name>
-    . . .
-    </Box>
-    <Profinet PLCPortNr="851" AddPortCount="1" />
-  </Device>
-</TcSmItem>
-```
+However, if piping is enabled, you have to specify a capture-device with [option](#options) `-d` or `-f
 ### Options
 Option | Required | Description
 --- | --- | ---
@@ -155,6 +117,7 @@ Option | Required | Description
 `--dump-file`| no | Pcap dump file.
 `--aml-file`| no | TIA aml export file.
 `--gsd-path`| no | Path to a folder containing GSDML files.
+`--convert-pn-names`| no | Convert PnNames with special characters.
 `-h`<br/>`--help`| no| Display help screen.
 `--version`| no| Display version information.
 
@@ -235,39 +198,6 @@ Data: 0010  05 00 00 00 b5 1a 00 01  00 0a 02 02 00 05 70 6e   ........ ......pn
 Data: 0020  2d 69 6f 00 00 00 00 00  00 00 00 00 00 00 00 00   -io..... ........
 Data: 0030  00 00 00 00 00 00 00 00  00 00 00 00               ........ ....
 
-```
-
-#### Example `-h`/`--help`
-```sh
-OC.TcPnScanner.CLI 0.1.0
-Copyright (c) 2023 densogiaichned
-
-ERROR(S):
-  Option 'h' is unknown.
-
-  -d, --capture-device    (Default: ) The name of the capture device to use.
-
-  -t, --timeout           (Default: 180) Capture timeout in seconds.
-
-  -f, --pcap-file         (Default: ) Read from a pcap capture file.
-
-  -o, --out-xti-file      (Default: %TEMP%/$APPNAME$/$CONTROLLER$.xti) Output directory to export the TwinCAT Export file.
-
-  -l, --log-level         (Default: Information) Minimum LogEventLevel
-
-  --log-file              (Default: %TEMP%/$APPNAME$/$APPNAME$-.log) Path to logfile
-
-  --dump                  (Default: false) Dump captured packets to file.
-
-  --dump-file             (Default: %TEMP%/$APPNAME$/$APPNAME$-yyyyMMddHHmmss.pcap) Pcap dump file.
-
-  --aml-file              Aml export file from TIA.
-
-  --gsd-path              Path to a folder containing GSDML files.
-
-  --help                  Display this help screen.
-
-  --version               Display version information.
 ```
 
 ### Logs

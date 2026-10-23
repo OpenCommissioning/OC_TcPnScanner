@@ -1,0 +1,62 @@
+name: Release
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install Versionize
+        run: dotnet tool install --global Versionize
+
+      - name: Setup git
+        run: |
+          git config --global user.email opencommissioning@spiratec.com
+          git config --global user.name "oc-bot"
+
+      - name: Versioning
+        id: versionize
+        run: versionize --exit-insignificant-commits
+
+      - name: Get current version
+        run: echo "VERSION=$(versionize inspect)" >> $GITHUB_ENV
+
+      - name: Get current changelog
+        run: echo "$(versionize changelog)" > latest_changelog.md
+
+      - name: Dotnet build
+        run: dotnet build --configuration Release
+
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to NuGet
+        run: dotnet nuget push "./OC.TcPnScanner.CLI/bin/Release/OC.TcPnScanner.CLI.$VERSION.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+
+      - name: Push changes to GitHub
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+          tags: true
+
+      - name: Publish new release
+        run: |
+          gh release create v$VERSION -t "Release v$VERSION" -F latest_changelog.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
